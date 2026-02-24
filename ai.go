@@ -10,7 +10,7 @@ import (
 )
 
 
-func aiResponse(query string) {
+func aiResponse(query string) string {
 	ctx := context.Background()
 	client := openai.NewClient(
 		option.WithBaseURL("https://ai.hackclub.com/proxy/v1"),
@@ -27,5 +27,7 @@ func aiResponse(query string) {
 		panic(err)
 	}
 
-	println(resp.OutputText())
+	return resp.OutputText()
+
+	
 }
