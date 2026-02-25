@@ -1,4 +1,4 @@
-package main
+package tools
 
 type Tool struct {
 	Name        string
@@ -24,4 +24,9 @@ var SearchTool = Tool{
 		// TODO: actually do something
 		return "res", nil
 	},
+}
+
+var All = []Tool{
+	SearchTool,
+	CoolifyDeploy,
 }

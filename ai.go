@@ -8,6 +8,8 @@ import (
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/responses"
+
+	"github.com/sadeshmukh/pinched/tools"
 )
 
 func aiResponse(query string) string {
@@ -30,7 +32,7 @@ func aiResponse(query string) string {
 
 }
 
-func aiResponseWithTools(query string, tools []Tool) string {
+func aiResponseWithTools(query string, toolList []tools.Tool) string {
 	ctx := context.Background()
 	client := openai.NewClient(
 		option.WithBaseURL("https://ai.hackclub.com/proxy/v1"),
@@ -38,7 +40,7 @@ func aiResponseWithTools(query string, tools []Tool) string {
 	)
 
 	apiTools := []responses.ToolUnionParam{}
-	for _, tool := range tools {
+	for _, tool := range toolList {
 		apiTools = append(apiTools,
 			responses.ToolUnionParam{
 				OfFunction: &responses.FunctionToolParam{
@@ -67,8 +69,8 @@ func aiResponseWithTools(query string, tools []Tool) string {
 		if item.Type == "function_call" {
 			toolCall := item.AsFunctionCall()
 
-			var whichTool *Tool
-			for _, t := range tools {
+			var whichTool *tools.Tool
+			for _, t := range toolList {
 				if t.Name == toolCall.Name {
 					whichTool = &t
 					break

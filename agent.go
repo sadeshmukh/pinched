@@ -1,5 +1,7 @@
 package main
 
+import "github.com/sadeshmukh/pinched/tools"
+
 type Task struct {
 	Source   string
 	Content  string
@@ -11,7 +13,7 @@ func TaskIngestor() chan Task {
 
 	go func() {
 		for task := range tasks {
-			tools := []Tool{SearchTool}
+			tools := tools.All
 			res := aiResponseWithTools(task.Content, tools)
 			task.Response <- res
 		}
