@@ -6,23 +6,20 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Task struct {
-	Source string
-	Content string
-	Response chan string
-}
-
-
 func main() {
 	err := godotenv.Load()
-	
+
 	if err != nil {
 		fmt.Println("Error loading .env file")
 	}
 
 	tasks := TaskIngestor()
-	Discord(tasks)
+	err = Discord(tasks)
+	if err != nil {
+		panic(err)
+	}
 
+	select {}
 
 	// mux := http.NewServeMux()
 
@@ -38,6 +35,3 @@ func main() {
 	// 	fmt.Println(err)
 	// }
 }
-
-
-

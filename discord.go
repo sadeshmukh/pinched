@@ -11,7 +11,7 @@ func Discord(tasks chan Task) error {
 	if err != nil {
 		return err
 	}
-	discord.AddHandler(func(s *discordgo.Session, m *discordgo.Message) {
+	discord.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if s.State.User.ID == m.Author.ID {
 			return
 		}
