@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/joho/godotenv"
-	"github.com/sadeshmukh/pinched/secrets"
 )
 
 func main() {
@@ -27,18 +26,6 @@ func main() {
 	// } else {
 	// 	fmt.Printf("deploy response: %s\n", _res)
 	// }
-
-	err = secrets.StoreSecret("test", "highly highly secret value over here")
-	if err != nil {
-		panic(err)
-	}
-	val, err := secrets.GetSecret("test")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(val)
-	subbed := secrets.Substitute("secret value: {{test}}")
-	fmt.Println(subbed)
 
 	tasks := TaskIngestor()
 	err = Discord(tasks)
