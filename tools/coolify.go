@@ -121,6 +121,7 @@ var CoolifyDeployV2 = Tool{
 	},
 	Required: []string{"repo"},
 	Exec: func(params map[string]interface{}) (string, error) {
+		return "", nil
 		// time to playwright this entire thing hell yeah
 	},
 }
