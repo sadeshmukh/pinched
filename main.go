@@ -13,6 +13,20 @@ func main() {
 		fmt.Println("Error loading .env file")
 	}
 
+	// see coolify.go for why this doesn't work, tl;dr coolify API just doesn't work at all
+
+	// _res, err := tools.CoolifyDeploy.Exec(
+	// 	map[string]interface{}{
+	// 		"repo": "sadeshmukh/listen",
+	// 		// "url":  "https://listen.halceon.dev",
+	// 	},
+	// )
+	// if err != nil {
+	// 	fmt.Printf("deploy error: %v\n", err)
+	// } else {
+	// 	fmt.Printf("deploy response: %s\n", _res)
+	// }
+
 	tasks := TaskIngestor()
 	err = Discord(tasks)
 	if err != nil {
