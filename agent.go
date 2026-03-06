@@ -23,6 +23,7 @@ func TaskIngestor() chan Task {
 				parts := strings.SplitN(task.Content, " ", 5)
 				if len(parts) < 3 {
 					task.Response <- "format: `pinched secret [set/get] [name] [value (if set)]`"
+					continue
 				}
 				action := parts[2]
 				name := parts[3]
@@ -72,12 +73,11 @@ func TaskIngestor() chan Task {
 				Exec: func(params map[string]interface{}) (string, error) {
 					resp := params["response"].(string)
 
-					task.Response <- resp
-					return resp, nil
+					return "|END|" + resp, nil
 				},
 			}
 
-			res := aiResponseWithTools(prompt, tools.All)
+			res := aiResponseWithTools(prompt, append(tools.All, exitLoopTool))
 			task.Response <- res
 		}
 	}()

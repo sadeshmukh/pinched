@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -35,17 +36,27 @@ func aiResponseWithTools(query string, toolList []tools.Tool) string {
 			})
 	}
 
-	resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
-		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String(query)},
-		Model: openai.ChatModel("qwen3-32b"),
-		Tools: apiTools,
-	})
-
-	if err != nil {
-		panic(err)
+	messages := []responses.ResponseInputItemUnionParam{
+		{
+			OfMessage: &responses.EasyInputMessageParam{
+				Role: "user",
+				Content: responses.EasyInputMessageContentUnionParam{
+					OfString: openai.String(query),
+				},
+			},
+		},
 	}
 
 	for {
+		resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
+			Input: responses.ResponseNewParamsInputUnion{OfInputItemList: messages},
+			Model: openai.ChatModel("qwen3-32b"),
+			Tools: apiTools,
+		})
+
+		if err != nil {
+			panic(err)
+		}
 		hasToolCall := false
 		for _, item := range resp.Output {
 			if item.Type == "function_call" {
@@ -68,19 +79,13 @@ func aiResponseWithTools(query string, toolList []tools.Tool) string {
 					panic(err)
 				}
 
-				resp, _ = client.Responses.New(ctx, responses.ResponseNewParams{
-					PreviousResponseID: openai.String(resp.ID),
-					Input: responses.ResponseNewParamsInputUnion{
-						OfInputItemList: []responses.ResponseInputItemUnionParam{{
-							OfFunctionCallOutput: &responses.ResponseInputItemFunctionCallOutputParam{
-								CallID: toolCall.CallID,
-								Output: responses.ResponseInputItemFunctionCallOutputOutputUnionParam{
-									OfString: openai.String(result),
-								},
-							},
-						}},
-					},
-				})
+				if strings.HasPrefix(result, "|END|") {
+					return strings.TrimPrefix(result, "|END|")
+				}
+
+				messages = append(messages,
+					responses.ResponseInputItemParamOfFunctionCall(toolCall.Arguments, toolCall.CallID, toolCall.Name),
+					responses.ResponseInputItemParamOfFunctionCallOutput(toolCall.CallID, result))
 
 			}
 		}
