@@ -8,24 +8,6 @@ type Tool struct {
 	Exec        func(params map[string]interface{}) (string, error)
 }
 
-var SearchTool = Tool{
-	Name:        "search_web",
-	Description: "Searches the web",
-	Parameters: map[string]any{
-		"query": map[string]any{
-			"type":        "string",
-			"description": "The search query",
-		},
-	},
-	Required: []string{"query"},
-
-	Exec: func(params map[string]interface{}) (string, error) {
-		// query := params["query"].(string)
-		// TODO: actually do something
-		return "res", nil
-	},
-}
-
 var All = []Tool{
 	SearchTool,
 	CoolifyDeploy,

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sadeshmukh/pinched/secrets"
 	"github.com/sadeshmukh/pinched/tools"
@@ -57,8 +58,12 @@ func TaskIngestor() chan Task {
 				continue
 			}
 
+			date := fmt.Sprintf("Current date and time: %s", time.Now().Local().Format("2006-01-02"))
 			// metaprompt prepend before direct task.content
-			prompt := fmt.Sprintf(`You are Pinched, a personal assistant for Sahil, provided certain tools to manage their infrastructure. Keep in mind the formatting of the source: %s. When given secrets in the form {{SECRET}}, repeat them verbatim and they will be substituted later on. Do not use tools unless necessary. User prompt: %s`, task.Source, task.Content)
+			prompt := fmt.Sprintf(`You are Pinched, a personal assistant for Sahil, provided certain tools to manage their infrastructure. Keep in mind the formatting of the source: %s. When given secrets in the form {{SECRET}}, repeat them verbatim and they will be substituted later on. Do not use tools unless necessary. %s User prompt: %s`,
+				task.Source,
+				date,
+				task.Content)
 
 			exitLoopTool := tools.Tool{
 				Name:        "end_with_resp",
