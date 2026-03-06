@@ -59,6 +59,24 @@ func TaskIngestor() chan Task {
 			// metaprompt prepend before direct task.content
 			prompt := fmt.Sprintf(`You are Pinched, a personal assistant for Sahil, provided certain tools to manage their infrastructure. Keep in mind the formatting of the source: %s. When given secrets in the form {{SECRET}}, repeat them verbatim and they will be substituted later on. Do not use tools unless necessary. User prompt: %s`, task.Source, task.Content)
 
+			exitLoopTool := tools.Tool{
+				Name:        "end_with_resp",
+				Description: "Call this when you've finished the task and are ready to respond with a summary of your actions taken, if applicable, or a final answer. This can be used to the exit even if no tools have been called.",
+				Parameters: map[string]any{
+					"response": map[string]any{
+						"type":        "string",
+						"description": "The final response to the user's query. Can be a summary of actions taken, if applicable, or a final answer.",
+					},
+				},
+				Required: []string{"response"},
+				Exec: func(params map[string]interface{}) (string, error) {
+					resp := params["response"].(string)
+
+					task.Response <- resp
+					return resp, nil
+				},
+			}
+
 			res := aiResponseWithTools(prompt, tools.All)
 			task.Response <- res
 		}

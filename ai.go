@@ -45,42 +45,49 @@ func aiResponseWithTools(query string, toolList []tools.Tool) string {
 		panic(err)
 	}
 
-	for _, item := range resp.Output {
-		if item.Type == "function_call" {
-			toolCall := item.AsFunctionCall()
+	for {
+		hasToolCall := false
+		for _, item := range resp.Output {
+			if item.Type == "function_call" {
+				hasToolCall = true
+				toolCall := item.AsFunctionCall()
 
-			var whichTool *tools.Tool
-			for _, t := range toolList {
-				if t.Name == toolCall.Name {
-					whichTool = &t
-					break
+				var whichTool *tools.Tool
+				for _, t := range toolList {
+					if t.Name == toolCall.Name {
+						whichTool = &t
+						break
+					}
 				}
-			}
 
-			var args map[string]interface{}
-			json.Unmarshal([]byte(toolCall.Arguments), &args)
-			result, err := whichTool.Exec(args)
+				var args map[string]interface{}
+				json.Unmarshal([]byte(toolCall.Arguments), &args)
+				result, err := whichTool.Exec(args)
 
-			if err != nil {
-				panic(err)
-			}
+				if err != nil {
+					panic(err)
+				}
 
-			resp, _ = client.Responses.New(ctx, responses.ResponseNewParams{
-				PreviousResponseID: openai.String(resp.ID),
-				Input: responses.ResponseNewParamsInputUnion{
-					OfInputItemList: []responses.ResponseInputItemUnionParam{{
-						OfFunctionCallOutput: &responses.ResponseInputItemFunctionCallOutputParam{
-							CallID: toolCall.CallID,
-							Output: responses.ResponseInputItemFunctionCallOutputOutputUnionParam{
-								OfString: openai.String(result),
+				resp, _ = client.Responses.New(ctx, responses.ResponseNewParams{
+					PreviousResponseID: openai.String(resp.ID),
+					Input: responses.ResponseNewParamsInputUnion{
+						OfInputItemList: []responses.ResponseInputItemUnionParam{{
+							OfFunctionCallOutput: &responses.ResponseInputItemFunctionCallOutputParam{
+								CallID: toolCall.CallID,
+								Output: responses.ResponseInputItemFunctionCallOutputOutputUnionParam{
+									OfString: openai.String(result),
+								},
 							},
-						},
-					}},
-				},
-			})
+						}},
+					},
+				})
 
+			}
+		}
+
+		if !hasToolCall {
+			return resp.OutputText()
 		}
 	}
 
-	return resp.OutputText()
 }

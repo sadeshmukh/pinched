@@ -28,12 +28,15 @@ func main() {
 	// }
 
 	tasks := TaskIngestor()
-	err = Discord(tasks)
+	go func() {
+		if err := Discord(tasks); err != nil {
+			panic(err)
+		}
+	}()
+	err = Slack(tasks)
 	if err != nil {
 		panic(err)
 	}
-
-	select {}
 
 	// mux := http.NewServeMux()
 
