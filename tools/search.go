@@ -51,7 +51,14 @@ var SearchTool = Tool{
 			return "", err
 		}
 
-		results := result["web"].(map[string]any)["results"].([]any)
+		web, ok := result["web"].(map[string]any)
+		if !ok || web == nil {
+			return "No results found.", nil
+		}
+		results, ok := web["results"].([]any)
+		if !ok || results == nil {
+			return "No results found.", nil
+		}
 		output := ""
 		for i, r := range results {
 			if i >= 5 {
