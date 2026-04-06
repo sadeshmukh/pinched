@@ -5,16 +5,39 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/jamespfennell/gtfs"
 )
+
+var pacificLoc = func() *time.Location {
+	loc, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		panic(err)
+	}
+	return loc
+}()
 
 type BARTTripInfo struct {
 	RouteID     string
 	DirectionID string
 	Headsign    string
 }
+
+// route id, headsigns
+// headsigns - just check the part after the last " / "(space is important, bc some have slash in the name itself)
+// Grey 19: Oakland Airport -> Coliseum (direction FALSE), 20: Coliseum -> Oakland Airport (direction TRUE)
+// Yellow 2 -> Pittsburg/Bay Point FALSE, 1 -> Milbrae (Caltrain Transfer Platform or San Francisco International Airport) TRUE | for this one, prob just rely on route? dunno, it's weird
+// Blue 12: -> Dublin/Pleasanton FALSE, 11: -> Daly City TRUE
+// Green 5 TRUE -> Berryessa/North San Jose, 5 true -> Daly City
+//
+
+// Yellow 1 TRUE -> Millbrae, 2 FALSE -> Antioch or Pittsburg/Bay Point (same route ID and direction ID)
+// Orange 3
+
+// TODO: add in line to call
 
 // have to look up trip data separately unfortunately
 func getBARTTripLookup() (map[string]BARTTripInfo, error) {
@@ -44,6 +67,46 @@ func getBARTTripLookup() (map[string]BARTTripInfo, error) {
 	}
 
 	return tripLookup, nil
+}
+
+var BARTTripTestLookupTool = Tool{
+	Name:        "bart_trip_lookup",
+	Description: "Shows all trips",
+	Exec: func(params map[string]interface{}) (string, error) {
+		tripLookup, err := getBARTTripLookup()
+		if err != nil {
+			return "", err
+		}
+
+		// routeids := []string{}
+		// for _, info := range tripLookup {
+		// 	if !slices.Contains(routeids, info.RouteID) {
+		// 		routeids = append(routeids, info.RouteID)
+		// 	}
+		// }
+
+		// fmt.Println(routeids)
+
+		// return "", nil
+
+		seenids := []string{}
+		seentwice := []string{}
+
+		var ret strings.Builder
+		for tripID, info := range tripLookup {
+			if slices.Contains(seentwice, info.RouteID) {
+				continue
+			}
+			if slices.Contains(seenids, info.RouteID) {
+				seentwice = append(seentwice, info.RouteID)
+			}
+
+			ret.WriteString(fmt.Sprintf("Trip ID: %s, Route ID: %s, Direction ID: %s, Headsign: %s\n", tripID, info.RouteID, info.DirectionID, info.Headsign))
+			seenids = append(seenids, info.RouteID)
+		}
+
+		return ret.String(), nil
+	},
 }
 
 var BARTStationTool = Tool{
@@ -149,6 +212,11 @@ var BARTRealTimeTool = Tool{
 			return "", err
 		}
 
+		tl, err := getBARTTripLookup()
+		if err != nil {
+			return "", err
+		}
+
 		// fmt.Println(platformToStation)
 
 		var aText strings.Builder
@@ -157,16 +225,16 @@ var BARTRealTimeTool = Tool{
 		for _, trip := range realtimeData.Trips {
 
 			for _, update := range trip.StopTimeUpdates {
-				fmt.Println(trip.ID.ID)
+				// fmt.Println(trip.ID.ID)
 				// fmt.Println(*update.StopID, update.Arrival.Time, update.Departure.Time)
 				mstation := platformToStation[*update.StopID]
 				// fmt.Println(mstation)
 				if mstation == stationID {
 					foundAny = true
-					if update.Arrival != nil && !update.Arrival.Time.IsZero() {
-						arrivalTime := update.Arrival.Time.Format("3:04 PM")
-
-						aText.WriteString(fmt.Sprintf("Train %s arriving at %s\n", trip.ID.ID, arrivalTime))
+					if update.Arrival != nil && !update.Arrival.Time.IsZero() && update.Arrival.Time.After(time.Now()) {
+						arrivalTime := update.Arrival.Time.In(pacificLoc).Format("3:04 PM")
+						tinfo := tl[trip.ID.ID]
+						aText.WriteString(fmt.Sprintf("Train %s arriving at %s\n", tinfo.Headsign, arrivalTime))
 					}
 				}
 			}
@@ -174,6 +242,63 @@ var BARTRealTimeTool = Tool{
 
 		if !foundAny {
 			return fmt.Sprintf("No trains found for station %s", stationID), nil
+		}
+
+		return aText.String(), nil
+	},
+}
+
+var BARTRealTimeAggregateTool = Tool{
+	Name:        "bart_realtime_aggregate",
+	Description: "Gets real-time BART info sourced from GTFS",
+	Parameters:  map[string]any{},
+	Exec: func(params map[string]interface{}) (string, error) {
+
+		fmt.Println("bart: getting realtime data")
+		resp, err := http.Get("http://api.bart.gov/gtfsrt/tripupdate.aspx")
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		realtimeData, err := gtfs.ParseRealtime(b, &gtfs.ParseRealtimeOptions{})
+		if err != nil {
+			return "", err
+		}
+
+		platformToStation, err := getBARTPlatformToStationMap()
+		if err != nil {
+			return "", err
+		}
+
+		tl, err := getBARTTripLookup()
+		if err != nil {
+			return "", err
+		}
+
+		// fmt.Println(platformToStation)
+
+		var aText strings.Builder
+
+		for _, trip := range realtimeData.Trips {
+
+			for _, update := range trip.StopTimeUpdates {
+				// fmt.Println(trip.ID.ID)
+				// fmt.Println(*update.StopID, update.Arrival.Time, update.Departure.Time)
+				mstation := platformToStation[*update.StopID]
+				// fmt.Println(mstation)
+				if update.Arrival != nil && !update.Arrival.Time.IsZero() && update.Arrival.Time.After(time.Now()) {
+					arrivalTime := update.Arrival.Time.In(pacificLoc).Format("3:04 PM")
+					tinfo := tl[trip.ID.ID]
+					aText.WriteString(fmt.Sprintf("Train %s arriving at %s\n | Stop: %s", tinfo.Headsign, arrivalTime, mstation))
+				}
+
+			}
 		}
 
 		return aText.String(), nil

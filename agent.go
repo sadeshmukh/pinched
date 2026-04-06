@@ -60,10 +60,18 @@ func TaskIngestor() chan Task {
 
 			date := fmt.Sprintf("Current date and time: %s", time.Now().Local().Format("2006-01-02"))
 			// metaprompt prepend before direct task.content
-			prompt := fmt.Sprintf(`You are Pinched, a personal assistant for Sahil, provided certain tools to manage their infrastructure. Keep in mind the formatting of the source: %s. When given secrets in the form {{SECRET}}, repeat them verbatim and they will be substituted later on. Do not use tools unless necessary. %s User prompt: %s`,
+			slack_prompt := "Strictly adhere to this formatting: slack uses mrkdwn for formatting, so you can use *bold*, _italic_, and `code` formatting in your responses, as well as line breaks, block quotes, code blocks, and lists. For links, use this formatting: <http://www.example.com|link>."
+
+			prompt := fmt.Sprintf(`You are Pinched, a personal assistant for Sahil, provided certain tools to manage their infrastructure. Keep in mind the formatting of the source: %s. When given secrets in the form {{SECRET}}, repeat them verbatim and they will be substituted later on. Do not use tools unless necessary. Generally, Sahil lives in Pleasanton. %s`,
 				task.Source,
 				date,
-				task.Content)
+			)
+
+			if task.Source == "slack" {
+				prompt = prompt + "\n\n" + slack_prompt
+			}
+
+			prompt = prompt + "\n\n" + task.Content
 
 			exitLoopTool := tools.Tool{
 				Name:        "end_with_resp",

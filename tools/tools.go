@@ -11,4 +11,7 @@ type Tool struct {
 var All = []Tool{
 	SearchTool,
 	CoolifyDeploy,
+	BARTRealTimeTool,
+	BARTStationTool,
+	BARTRealTimeAggregateTool,
 }

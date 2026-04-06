@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/joho/godotenv"
-	"github.com/sadeshmukh/pinched/tools"
 )
 
 func main() {
@@ -28,16 +27,12 @@ func main() {
 	// 	fmt.Printf("deploy response: %s\n", _res)
 	// }
 
-	res, err := tools.BARTRealTimeTool.Exec(
-		map[string]interface{}{
-			"station_id": "WDUB",
-		},
-	)
-	if err != nil {
-		fmt.Printf("BART real-time error: %v\n", err)
-	} else {
-		fmt.Printf("BART real-time response: %s\n", res)
-	}
+	// res, err := tools.BARTTripTestLookupTool.Exec(nil)
+	// if err != nil {
+	// 	fmt.Printf("BART real-time error: %v\n", err)
+	// } else {
+	// 	fmt.Printf("BART real-time response: %s\n", res)
+	// }
 
 	// res, err := tools.BARTStationTool.Exec(nil)
 	// if err != nil {
@@ -48,16 +43,16 @@ func main() {
 
 	// select {}
 
-	// tasks := TaskIngestor()
-	// go func() {
-	// 	if err := Discord(tasks); err != nil {
-	// 		panic(err)
-	// 	}
-	// }()
-	// err = Slack(tasks)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	tasks := TaskIngestor()
+	go func() {
+		if err := Discord(tasks); err != nil {
+			panic(err)
+		}
+	}()
+	err = Slack(tasks)
+	if err != nil {
+		panic(err)
+	}
 
 	// mux := http.NewServeMux()
 

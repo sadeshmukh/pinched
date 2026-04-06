@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
@@ -48,6 +49,11 @@ func aiResponseWithTools(query string, toolList []tools.Tool) string {
 	}
 
 	for {
+
+		if messages[len(messages)-1].GetContent().AsAny() != nil {
+			fmt.Println("ai: " + *messages[len(messages)-1].GetContent().AsAny().(*string))
+		}
+
 		resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
 			Input: responses.ResponseNewParamsInputUnion{OfInputItemList: messages},
 			Model: openai.ChatModel("qwen3-32b"),
