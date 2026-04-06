@@ -62,7 +62,7 @@ func TaskIngestor() chan Task {
 			// metaprompt prepend before direct task.content
 			slack_prompt := "Strictly adhere to this formatting: slack uses mrkdwn for formatting, so you can use *bold*, _italic_, and `code` formatting in your responses, as well as line breaks, block quotes, code blocks, and lists. For links, use this formatting: <http://www.example.com|link>."
 
-			prompt := fmt.Sprintf(`You are Pinched, a personal assistant for Sahil, provided certain tools to manage their infrastructure. Keep in mind the formatting of the source: %s. When given secrets in the form {{SECRET}}, repeat them verbatim and they will be substituted later on. Do not use tools unless necessary. Generally, Sahil lives in Pleasanton. %s`,
+			prompt := fmt.Sprintf(`You are Pinched, a personal assistant for Sahil, provided certain tools to manage their infrastructure. Keep in mind the formatting of the source: %s. When given secrets in the form {{SECRET}}, repeat them verbatim and they will be substituted later on. Do not use tools unless necessary. Generally, use the location WDUB if none other is provided. %s`,
 				task.Source,
 				date,
 			)

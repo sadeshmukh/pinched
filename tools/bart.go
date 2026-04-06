@@ -39,8 +39,16 @@ type BARTTripInfo struct {
 
 // TODO: add in line to call
 
-// have to look up trip data separately unfortunately
-func getBARTTripLookup() (map[string]BARTTripInfo, error) {
+var (
+	cachedStatic    *gtfs.Static
+	staticCacheTime time.Time
+	staticCacheTTL  = time.Hour
+)
+
+func getStaticData() (*gtfs.Static, error) {
+	if cachedStatic != nil && time.Now().Before(staticCacheTime.Add(staticCacheTTL)) {
+		return cachedStatic, nil
+	}
 	resp, err := http.Get("https://www.bart.gov/dev/schedules/google_transit.zip")
 	if err != nil {
 		return nil, err
@@ -52,7 +60,19 @@ func getBARTTripLookup() (map[string]BARTTripInfo, error) {
 		return nil, err
 	}
 
-	staticData, err := gtfs.ParseStatic(b, gtfs.ParseStaticOptions{})
+	static, err := gtfs.ParseStatic(b, gtfs.ParseStaticOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	cachedStatic = static
+	staticCacheTime = time.Now()
+	return cachedStatic, nil
+}
+
+// have to look up trip data separately unfortunately
+func getBARTTripLookup() (map[string]BARTTripInfo, error) {
+	staticData, err := getStaticData()
 	if err != nil {
 		return nil, err
 	}
@@ -114,16 +134,10 @@ var BARTStationTool = Tool{
 	Description: "Returns a map of stations and IDs",
 	Exec: func(params map[string]interface{}) (string, error) {
 		fmt.Println("bart: station list")
-		resp, err := http.Get("https://www.bart.gov/dev/schedules/google_transit.zip")
+		staticData, err := getStaticData()
 		if err != nil {
 			return "", err
 		}
-		defer resp.Body.Close()
-		b, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return "", err
-		}
-		staticData, _ := gtfs.ParseStatic(b, gtfs.ParseStaticOptions{})
 		// retrieve ID for each
 		stopCount := 0
 		var ret strings.Builder
@@ -146,18 +160,7 @@ var BARTStationTool = Tool{
 }
 
 func getBARTPlatformToStationMap() (map[string]string, error) {
-	resp, err := http.Get("https://www.bart.gov/dev/schedules/google_transit.zip")
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	staticData, err := gtfs.ParseStatic(b, gtfs.ParseStaticOptions{})
+	staticData, err := getStaticData()
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +253,7 @@ var BARTRealTimeTool = Tool{
 
 var BARTRealTimeAggregateTool = Tool{
 	Name:        "bart_realtime_aggregate",
-	Description: "Gets real-time BART info sourced from GTFS",
+	Description: "Gets real-time BART info sourced from GTFS. Do not use unless absolutely necessary.",
 	Parameters:  map[string]any{},
 	Exec: func(params map[string]interface{}) (string, error) {
 
