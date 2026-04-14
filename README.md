@@ -13,4 +13,4 @@ Pinched aims to be a simple implementation of an "anything" agent to do stuff I 
 - Some sort of dashboard with HTMX
 - Internal system for how it's called, so it tells itself when to run, but not sure how it'll work yet
 
-The idea started from OpenClaw, but after seeing how incredibly expensive and overcomplicated it felt to set up, I wanted to make something simpler for my own usecase. Not sure how OpenClaw works, but I plan to have it manage its own invocations, which should makei it faster.
+The idea started from OpenClaw, but after seeing how incredibly expensive and overcomplicated it felt to set up, I wanted to make something simpler for my own usecase. Not sure how OpenClaw works, but I plan to have it manage its own invocations, which should make it faster.
