@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func Discord(tasks chan Task) error {
+	fmt.Println("discord: connecting...")
 	discord, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
 		return err
@@ -55,6 +57,9 @@ func Discord(tasks chan Task) error {
 
 		s.ChannelMessageSend(m.ChannelID, <-res)
 
+	})
+	discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+		fmt.Println("discord: connected")
 	})
 	return discord.Open()
 }
